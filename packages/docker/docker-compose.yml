@@ -1,0 +1,17 @@
+# docker-compose.yml
+version: "3"
+services:
+  db:
+    image: postgres
+    container_name: pg-prisma
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: prisma_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

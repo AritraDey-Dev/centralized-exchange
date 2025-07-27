@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  wallets   Wallet[]
+  orders    Order[]
+}
+
+model Wallet {
+  id      Int     @id @default(autoincrement())
+  user    User    @relation(fields: [userId], references: [id])
+  userId  Int
+  asset   String
+  balance Decimal @default(0.0)
+
+  @@unique([userId, asset])
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  user           User        @relation(fields: [userId], references: [id])
+  userId         Int
+  assetPair      String
+  orderType      OrderType
+  orderKind      OrderKind
+  price          Decimal? // null for market orders
+  quantity       Decimal
+  filledQuantity Decimal     @default(0.0)
+  status         OrderStatus @default(OPEN)
+  createdAt      DateTime    @default(now())
+  buyTrades      Trade[]     @relation("BuyOrder")
+  sellTrades     Trade[]     @relation("SellOrder")
+}
+
+model Trade {
+  id          Int      @id @default(autoincrement())
+  buyOrder    Order    @relation("BuyOrder", fields: [buyOrderId], references: [id])
+  buyOrderId  Int
+  sellOrder   Order    @relation("SellOrder", fields: [sellOrderId], references: [id])
+  sellOrderId Int
+  price       Decimal
+  quantity    Decimal
+  assetPair   String
+  timestamp   DateTime @default(now())
+}
+
+model Candlestick {
+  id         Int      @id @default(autoincrement())
+  assetPair  String
+  interval   String // e.g., "1m", "5m", "1h"
+  openTime   DateTime
+  openPrice  Decimal
+  highPrice  Decimal
+  lowPrice   Decimal
+  closePrice Decimal
+  volume     Decimal
+
+  @@unique([assetPair, interval, openTime])
+}
+
+enum OrderType {
+  BUY
+  SELL
+}
+
+enum OrderKind {
+  LIMIT
+  MARKET
+}
+
+enum OrderStatus {
+  OPEN
+  PARTIAL
+  FILLED
+  CANCELLED
+}
